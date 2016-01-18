@@ -7,12 +7,18 @@
 
   <body>
     <canvas id="canvas" width="500" height="500"></canvas>
+    <button id="reset">Reset</button>
+    <button id="breed">Breed</button>
+    <button id="mutate">Mutate</button>
+    <button id="cull">Cull</button>
+    <button id="breed-mutate-cull">Breed, Mutate, Cull?</button>
     <script>
       var canvas = document.getElementById('canvas');
       var context = canvas.getContext('2d');
 
       var xMin = 0, xMax = 2 * Math.PI, yMin = -1, yMax = 1;
-      var lineWidth = 1, plotResolution = 5;
+      var lineWidth = 1, boxSize = 10, plotResolution = 5;
+      var populationSize = 10;
 
       var xSize = xMax - xMin, ySize = yMax - yMin;
       var xScale = canvas.width / xSize, yScale = canvas.height / ySize;
@@ -26,6 +32,85 @@
         return Math.sin(x) * 0.8 + Math.cos(x * 5) / 5;
       };
 
+      var Solution = function (alleles) {
+        this.alleles = alleles;
+      };
+
+      Solution.bits = 6;
+
+      Solution.prototype.randomise = function () {
+        this.alleles = [];
+        for (var i = 0; i < Solution.bits; ++i) {
+          this.alleles.push(Math.random() > 0.5 ? 1 : 0);
+        }
+      };
+
+      Solution.prototype.value = function () {
+        return parseInt(this.alleles.join(""), 2) / Math.pow(2, Solution.bits);
+      };
+
+      var population;
+
+      var reset = function () {
+        population = [];
+
+        for (var i = 0; i < populationSize; ++i) {
+          var solution = new Solution();
+          solution.randomise();
+          population[i] = solution;
+        }
+      };
+
+      var sortPopulation = function () {
+        population.sort(function (a, b) {
+          return f(xMin + b.value() * xSize) - f(xMin + a.value() * xSize);
+        });
+      };
+
+      var breed = function () {
+        sortPopulation();
+
+        for (var i = 0; i < 6; ++i) {
+          var mother = population[i], father = population[i + 1];
+          var cutoff = 1 + Math.floor(Math.random() * (Solution.bits - 1));
+          var alleles = mother.alleles.slice(0, cutoff).concat(father.alleles.slice(cutoff, Solution.bits));
+          var child = new Solution(alleles);
+          population.push(child);
+        }
+      };
+
+      var mutate = function () {
+        sortPopulation();
+
+        var solution, bit;
+
+        solution = population[Math.floor(Math.random() * 6)];
+        bit = Math.floor(Math.random() * Solution.bits);
+        solution.alleles[bit] = 1 - solution.alleles[bit];
+
+        solution = population[population.length - 1 - Math.floor(Math.random() * 4)];
+        bit = Math.floor(Math.random() * Solution.bits);
+        solution.alleles[bit] = 1 - solution.alleles[bit];
+      };
+
+      var cull = function () {
+        sortPopulation();
+
+        population = population.slice(0, populationSize);
+      };
+
+      document.getElementById('reset').addEventListener('click', reset);
+      document.getElementById('breed').addEventListener('click', breed);
+      document.getElementById('mutate').addEventListener('click', mutate);
+      document.getElementById('cull').addEventListener('click', cull);
+      document.getElementById('breed-mutate-cull').addEventListener('click', function () {
+        breed();
+        mutate();
+        cull();
+      });
+
+      reset();
+
       var render = function () {
         context.clearRect(xMin, yMin, xSize, ySize);
 
@@ -35,6 +120,11 @@
           context.lineTo(x, f(x));
         }
         context.stroke();
+
+        population.forEach(function (solution) {
+          var x = xMin + solution.value() * xSize;
+          context.fillRect(x - (boxSize / 2) / xScale, f(x) - (boxSize / 2) / yScale, boxSize / xScale, boxSize / yScale);
+        });
 
         window.requestAnimationFrame(render);
       };
