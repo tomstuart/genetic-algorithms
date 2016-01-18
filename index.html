@@ -7,5 +7,39 @@
 
   <body>
     <canvas id="canvas" width="500" height="500"></canvas>
+    <script>
+      var canvas = document.getElementById('canvas');
+      var context = canvas.getContext('2d');
+
+      var xMin = 0, xMax = 2 * Math.PI, yMin = -1, yMax = 1;
+      var lineWidth = 1, plotResolution = 5;
+
+      var xSize = xMax - xMin, ySize = yMax - yMin;
+      var xScale = canvas.width / xSize, yScale = canvas.height / ySize;
+
+      context.scale(xScale, yScale);
+      context.translate(-xMin, -yMin);
+      context.scale(1, -1); // positive is up
+      context.lineWidth = lineWidth / xScale;
+
+      var f = function (x) {
+        return Math.sin(x) * 0.8 + Math.cos(x * 5) / 5;
+      };
+
+      var render = function () {
+        context.clearRect(xMin, yMin, xSize, ySize);
+
+        context.beginPath();
+        context.moveTo(xMin, f(xMin));
+        for (var x = xMin; x < xMax; x += plotResolution / xScale) {
+          context.lineTo(x, f(x));
+        }
+        context.stroke();
+
+        window.requestAnimationFrame(render);
+      };
+
+      render();
+    </script>
   </body>
 </html>
