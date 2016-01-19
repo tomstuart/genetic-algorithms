@@ -3,15 +3,28 @@
 <html>
   <head>
     <title>Genetic algorithms</title>
+    <style>
+      div {
+        display: inline-block;
+        vertical-align: top;
+      }
+    </style>
   </head>
 
   <body>
-    <canvas id="canvas" width="500" height="500"></canvas>
-    <button id="reset">Reset</button>
-    <button id="breed">Breed</button>
-    <button id="mutate">Mutate</button>
-    <button id="cull">Cull</button>
-    <button id="breed-mutate-cull">Breed, Mutate, Cull?</button>
+    <div>
+      <canvas id="canvas" width="500" height="500"></canvas>
+      <br>
+      <button id="reset">Reset</button>
+      <button id="breed">Breed</button>
+      <button id="mutate">Mutate</button>
+      <button id="cull">Cull</button>
+      <button id="breed-mutate-cull">Breed, Mutate, Cull?</button>
+    </div>
+    <div>
+      <ul id="population">
+      </ul>
+    </div>
     <script>
       var canvas = document.getElementById('canvas');
       var context = canvas.getContext('2d');
@@ -50,6 +63,7 @@
       };
 
       var population;
+      var populationList = document.getElementById('population');
 
       var reset = function () {
         population = [];
@@ -59,17 +73,27 @@
           solution.randomise();
           population[i] = solution;
         }
+
+        sortPopulation();
       };
 
       var sortPopulation = function () {
         population.sort(function (a, b) {
           return f(xMin + b.value() * xSize) - f(xMin + a.value() * xSize);
         });
+
+        while (populationList.lastChild) {
+          populationList.removeChild(populationList.lastChild);
+        }
+
+        population.forEach(function (solution) {
+          var node = document.createElement('li');
+          node.textContent = solution.alleles.join('') + ' (' + f(xMin + solution.value() * xSize).toFixed(5) + ')';
+          populationList.appendChild(node);
+        });
       };
 
       var breed = function () {
-        sortPopulation();
-
         for (var i = 0; i < 6; ++i) {
           var mother = population[i], father = population[i + 1];
           var cutoff = 1 + Math.floor(Math.random() * (Solution.bits - 1));
@@ -77,11 +101,11 @@
           var child = new Solution(alleles);
           population.push(child);
         }
+
+        sortPopulation();
       };
 
       var mutate = function () {
-        sortPopulation();
-
         var solution, bit;
 
         solution = population[Math.floor(Math.random() * 6)];
@@ -91,12 +115,14 @@
         solution = population[population.length - 1 - Math.floor(Math.random() * 4)];
         bit = Math.floor(Math.random() * Solution.bits);
         solution.alleles[bit] = 1 - solution.alleles[bit];
+
+        sortPopulation();
       };
 
       var cull = function () {
-        sortPopulation();
-
         population = population.slice(0, populationSize);
+
+        sortPopulation();
       };
 
       document.getElementById('reset').addEventListener('click', reset);
