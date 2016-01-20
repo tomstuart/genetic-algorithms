@@ -37,8 +37,9 @@
       var xScale = canvas.width / xSize, yScale = canvas.height / ySize;
 
       context.scale(xScale, yScale);
-      context.translate(-xMin, -yMin);
       context.scale(1, -1); // positive is up
+      context.translate(0, -ySize); // move origin to bottom left
+      context.translate(-xMin, -yMin); // move xMin, yMin to bottom left
       context.lineWidth = lineWidth / xScale;
 
       var f = function (x) {
